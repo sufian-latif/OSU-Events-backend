@@ -1,32 +1,27 @@
-from bs4 import BeautifulSoup
-from mechanize import Browser
-# from firebase import firebase
+import urllib.request
 from json import loads, dumps
 from pprint import pprint
-
-def getMetadata(url):
-    browser = Browser()
-    json = loads(browser.open(eventsJsonUrl).read())
-    metadata = json['meta']
-    return metadata
+from time import strptime
 
 eventsJsonUrl = 'https://mediamagnet.osu.edu/api/v1/events.json'
+json = loads(urllib.request.urlopen(eventsJsonUrl).read())
+metadata = json['meta']
 
 allEvents = []
-metadata = getMetadata(eventsJsonUrl)
 link = metadata['links']['first']
 pprint(metadata)
 
-browser = Browser()
 while link:
-    print link
-    json = browser.open(link).read()
+    print(link)
+    json = urllib.request.urlopen(link).read()
     eventDict = loads(json)
     allEvents.extend(eventDict['events'])
     link = eventDict['meta']['links']['next']
 
-print len(allEvents), 'events information found'
+print(len(allEvents), 'events information found')
 
 outFile = 'events_raw.json'
-with open(outFile, 'w') as eventsFile:
-    eventsFile.write(dumps(allEvents, indent=4, separators=(',', ': ')))
+timeFormat = '%Y-%m-%d %H:%M:%S %z'
+with open(outFile, 'w') as fout:
+    fout.write(dumps(sorted(allEvents, key=lambda event: strptime(event['start_date'], timeFormat)),
+                     indent=4, separators=(',', ': ')))
